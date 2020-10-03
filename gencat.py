@@ -39,7 +39,7 @@ class pagegen:
             gds['mvtime']=0
         if not 'tags' in gds:
             gds['tags']={}
-        self.blacklist=['trump','biden','bleach','skeleton','hydroxy','current','vote','spoopy','skellingtons','pray','covid','shitpost','politic']
+        self.craplist=['trump','biden','bleach','skeleton','hydroxy','current','vote','spoopy','skellingtons','pray','covid','shitpost','politic']
         
     def GET(self,url):
         r=re.compile("/([a-zA-Z0-9]+)(/[a-zA-Z0-9]*)?(.*)?")
@@ -166,7 +166,7 @@ class pagegen:
             else:
                 gds['tags'][tag['display_name']]=gds['tags'][tag['display_name']]+1
             if not banned:
-                for b in self.blacklist:
+                for b in self.craplist:
                     if b in tag['display_name']:
                         print("banned due to", b)
                         banned=True
