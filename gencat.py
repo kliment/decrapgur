@@ -16,47 +16,50 @@ app = web.application(urls,globals())
 
 gds={}
 
+class gallery:
+    def __init__(self,name):
+        self.name=name
+        self.items=None
+        self.time=0
+        self.index=0
+        self.citems=[]
 
 class pagegen:
+
     def __init__(self,cid=CLIENT_ID):
         global gds
         if not 'im' in gds:
             gds['im']=pyimgur.Imgur(cid)
         self.im=gds['im']
-        if not 'top' in gds:
-            gds['top']=None
-        if not 'ctop' in gds:
-            gds['ctop']=[]
-        if not 'mv' in gds:
-            gds['mv']=None
-        if not 'cmv' in gds:
-            gds['cmv']=[]
-        if not 'mv' in gds:
-            gds['mv']=None
-        if not 'toptime' in gds:
-            gds['toptime']=0
-        if not 'mvtime' in gds:
-            gds['mvtime']=0
+        if not 'gal' in gds:
+            gds['gal']={}
+        if not '_m' in gds['gal']:
+            gds['gal']['_m']=gallery('_m')
+        if not '_t' in gds['gal']:
+            gds['gal']['_t']=gallery('_t')
         if not 'tags' in gds:
             gds['tags']={}
         self.craplist=['trump','biden','bleach','skeleton','hydroxy','current','vote','spoopy','skellingtons','pray','covid','shitpost','politic']
         
     def GET(self,url):
-        r=re.compile("/([a-zA-Z0-9]+)(/[a-zA-Z0-9]*)?(.*)?")
+        r=re.compile("/([a-zA-Z0-9]+)(/[a-zA-Z0-9+]*)?(/[a-zA-Z0-9+]*)?(.*)?")
         m=r.search('/'+url)
         if m is not None:
             mg1=m.group(1) if m.group(1) is not None else ""
             mg2=m.group(2) if m.group(2) is not None else ""
+            mg3=m.group(3)
             if 'gallery' in mg1:
                 return self.gen_gallery_page(mg2.strip('/'))
             elif 'mostv' in mg1:
-                return self.gen_browse_page(mg2.strip('/'),gtype='m')
+                return self.gen_browse_page(mg2.strip('/'),gtype='_m')
             elif 'top' in mg1:
-                return self.gen_browse_page(mg2.strip('/'),gtype='t')
+                return self.gen_browse_page(mg2.strip('/'),gtype='_t')
             elif 'tags' in mg1:
                 return str(gds['tags'])
             elif 'a' is mg1:
                 return self.gen_album_page(mg2.strip('/'))
+            elif 'r' is mg1 and mg2 is not None:
+                return self.gen_browse_page(mg3.strip('/') if mg3 is not None else None,gtype=mg2.strip('/'))
             elif mg2 is "":
                 return self.gen_image_page(mg1)
             else:
@@ -109,20 +112,32 @@ class pagegen:
             page+=self.gen_image(i)
         return page+self.gen_page_footer()
     
-    def gen_gallery_page(self,aid,index=None,browse=None):
+    def gen_gallery_page(self,aid,index=None,gallery=None):
         print("getting gallery item", aid)
         navbar=""
-        if index is not None and index>0 and ('mostv' in browse or 'top' in browse):
+        browse=""
+        gal="gallery/"
+        rgal="gallery/"
+        if gallery is not None:
+            if gallery.name is '_m':
+                browse="mostv"
+            elif gallery.name is '_t':
+                browse="top"
+            else:
+                browse='r/'+gallery.name
+                gal=""
+                rgal=browse+"/"
+        if index is not None and index>0 and gallery is not None:
             navbar+="""
             <a class="prev" href="%s" > Previous </a>
             """%('/'+browse+'/'+str(index-1))
         navbar+="""
             <a class="self-link" href="%s"> Self </a>
-            """%('/gallery/'+aid)
+            """%('/'+gal+aid)
         navbar+="""
             <a class="self-link" href="%s"> <small>imgur</small> </a>
-            """%('https://imgur.com/gallery/'+aid)
-        if index is not None and index>=0 and ('mostv' in browse or 'top' in browse):
+            """%('https://imgur.com/'+rgal+aid)
+        if index is not None and index>=0 and browse is not None:
             navbar+="""
             <a class="prev" href="%s" > Next </a>
             """%('/'+browse+'/'+str(index+1))
@@ -135,7 +150,11 @@ class pagegen:
             try:
                 image=self.im.get_gallery_image(aid)
             except:
-                pass
+                try:
+                    if gallery is not None:
+                        image=self.im.get_subreddit_image(gallery.name,aid)
+                except:
+                    pass
         if album is None:
             if image is None:
                 return self.gen_empty_page()
@@ -175,62 +194,42 @@ class pagegen:
             return item
         return None
 
-    def gen_browse_page(self,index,gtype='m'):
-        ggal=None
-        gcgal=None
-        if gtype is 'm':
-            if gds['mv'] is None or time.time()-gds['mvtime']>3600:
-                print("fetching mostv")
-                gds['mv']=self.im.get_gallery(section='hot',sort='time',window='day',limit=400)
-                if gds['mv'] is not None:
-                    for i in gds['mv']:
+    def gen_browse_page(self,index,gtype='_m'):
+        if not gtype in gds['gal']:
+            gds['gal'][gtype]=gallery(gtype)
+        g=gds['gal'][gtype]
+        if g.items is None or time.time()-g.time>3600:
+                print("fetching:",gtype)
+                if gtype is '_m':
+                    g.items=self.im.get_gallery(section='hot',sort='time',window='day',limit=400)
+                elif gtype is '_t':
+                    g.items=self.im.get_gallery(section='top',sort='time',window='day',limit=400)
+                else:
+                    g.items=self.im.get_subreddit_gallery(gtype, sort='top', window='day', limit=None)
+                if g.items is not None:
+                    print("fetched %d items"%(len(g.items),))
+                    for i in g.items:
                         i.tags=None
-                    gds['cmv']=[]
-                    gds['mvind']=0
-                gds['mvtime']=time.time()
-            ggal=gds['mv']
-        if gtype is 't':
-            if gds['top'] is None or time.time()-gds['toptime']>3600:
-                print("fetching top")
-                gds['top']=self.im.get_gallery(section='top',sort='time',window='day',limit=400)
-                if gds['top'] is not None:
-                    for i in gds['top']:
-                        i.tags=None
-                    gds['ctop']=[]
-                    gds['topind']=0
-                gds['toptime']=time.time()
-            ggal=gds['top']
-        if ggal is None:
+                    g.citems=[]
+                    if(gtype is not '_m' and gtype is not '_t'):
+                        g.citems=g.items
+                    g.index=0
+                g.time=time.time()
+        if g.items is None:
             return self.gen_empty_page("No such thing")
-        i=0
-        if index.isnumeric() and int(index)>=len(ggal):
+        if index.isnumeric() and int(index)>=len(g.items):
             self.gen_empty_page("That's all for today")
-        elif gtype is 'm':
-            i=0
-            if index.isnumeric() and int(index)<len(ggal):
-                i=int(index)
-            while len(gds['cmv'])<=i and gds['mvind']<len(ggal):
-                filtered=self.filter(ggal[gds['mvind']])
-                gds['mvind']+=1
-                if filtered:
-                    gds['cmv'].append(filtered)
-            if len(gds['cmv'])<i:
-                return self.gen_empty_page("That's all for today")
-            return self.gen_gallery_page(gds['cmv'][i].id,i,'mostv')
-        elif gtype is 't':
-            i=0
-            if index.isnumeric() and int(index)<len(ggal):
-                i=int(index)
-            while len(gds['ctop'])<=i and gds['topind']<len(ggal):
-                filtered=self.filter(ggal[gds['topind']])
-                gds['topind']+=1
-                if filtered:
-                    gds['ctop'].append(filtered)
-            if len(gds['ctop'])<i:
-                return self.gen_empty_page("That's all for today")
-            return self.gen_gallery_page(gds['ctop'][i].id,i,'top')
-        else:
-            return self.gen_empty_page("No idea what I'm doing here")
+        i=0
+        if index.isnumeric() and int(index)<len(g.items):
+            i=int(index)
+        while len(g.citems)<=i and g.index<len(g.items):
+            filtered=self.filter(g.items[g.index])
+            g.index+=1
+            if filtered:
+                g.citems.append(filtered)
+        if len(g.citems)<i:
+            return self.gen_empty_page("That's all for today")
+        return self.gen_gallery_page(g.items[i].id,i,g)
             
         
     def gen_image_page(self,iid):
