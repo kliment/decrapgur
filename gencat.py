@@ -47,7 +47,7 @@ class pagegen:
         if m is not None:
             mg1=m.group(1) if m.group(1) is not None else ""
             mg2=m.group(2) if m.group(2) is not None else ""
-            mg3=m.group(3)
+            mg3=m.group(3) if m.group(3) is not None else ""
             if 'gallery' in mg1:
                 return self.gen_gallery_page(mg2.strip('/'))
             elif 'mostv' in mg1:
@@ -58,8 +58,8 @@ class pagegen:
                 return str(gds['tags'])
             elif 'a' is mg1:
                 return self.gen_album_page(mg2.strip('/'))
-            elif 'r' is mg1 and mg2 is not None:
-                return self.gen_browse_page(mg3.strip('/') if mg3 is not None else None,gtype=mg2.strip('/'))
+            elif 'r' is mg1 and len(mg2):
+                return self.gen_browse_page(mg3.strip('/'),gtype=mg2.strip('/'))
             elif mg2 is "":
                 return self.gen_image_page(mg1)
             else:
