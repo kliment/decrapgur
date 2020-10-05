@@ -227,7 +227,7 @@ class pagegen:
             g.index+=1
             if filtered:
                 g.citems.append(filtered)
-        if len(g.citems)<i:
+        if len(g.citems)<=i:
             return self.gen_empty_page("That's all for today")
         return self.gen_gallery_page(g.items[i].id,i,g)
             
