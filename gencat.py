@@ -82,15 +82,19 @@ class pagegen:
     def gen_image(self,image):
         if image is None:
             return ""
-        link=image.link
-        if ".mp4" in link or ".webm" in link:
+        link=str(image.link)
+        thumb=str(image.link_huge_thumbnail)
+        if ".mp4" in link or ".webm" or ".gif" in link:
+            if(".gif" in link):
+                link=link.replace("http://","https://").replace("h.gif",".mp4")
+                thumb=thumb.replace("http://","https://").replace(".gif",".jpg")
             #this is a video - deal with that somehow
             return """
             <p>
                 <video muted="true" playsinline="true" poster="%s" src="%s" loop="true" disablePictureInPicture="true" controls="true" />
                 <div class="video-desc">%s</div>
             </p>
-            """%(str(image.link_huge_thumbnail),str(image.link),str(image.description if image.description else ""))
+            """%(str(thumb),str(link),str(image.description if image.description else ""))
         else:
             return """
             <p>
@@ -205,7 +209,7 @@ class pagegen:
                 elif gtype is '_t':
                     g.items=self.im.get_gallery(section='top',sort='time',window='day',limit=400)
                 else:
-                    g.items=self.im.get_subreddit_gallery(gtype, sort='top', window='day', limit=None)
+                    g.items=self.im.get_subreddit_gallery(gtype, sort='top', window='year', limit=None)
                 if g.items is not None:
                     print("fetched %d items"%(len(g.items),))
                     for i in g.items:
