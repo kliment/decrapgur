@@ -79,17 +79,16 @@ class pagegen:
                 return self.gen_empty_page("Unknown page")
     
     def gen_page_header(self,title=""):
-        return """
-    <html>
-        <head>
+        return """<html>
+    <head>
         <meta charset="UTF-8" />
         <title>"""+title.strip("<&>")+"""</title></head>
-        <body bgcolor="#000000" text="#FFFFFF">
-    """
+    <body bgcolor="#000000" text="#FFFFFF">
+"""
     def gen_page_footer(self):
         return """
-        </body>
-    </html>
+    </body>
+</html>
     """
     def gen_image(self,image):
         if image is None:
@@ -102,20 +101,19 @@ class pagegen:
                 thumb=thumb.replace("http://","https://").replace(".gif",".jpg")
             #this is a video - deal with that somehow
             return """
-            <p>
-                <video muted="true" playsinline="true" poster="%s" src="%s" loop="true" disablePictureInPicture="true" controls="true" />
-                <div class="video-desc">%s</div>
-            </p>
-            """%(str(thumb),str(link),str(image.description if image.description else ""))
+        <p>
+            <video muted="true" playsinline="true" poster="%s" src="%s" loop="true" disablePictureInPicture="true" controls="true" />
+            <div class="video-desc">%s</div>
+        </p>
+"""%(str(thumb),str(link),str(image.description if image.description else ""))
         else:
             return """
-            <p>
-                <a href="%s">
-                    <img src="%s"/>
-                </a>
-                <div class="img-desc">%s</div>
-            </p>
-            """%(str(image.link),str(image.link_huge_thumbnail),str(image.description if image.description else ""))
+        <p>
+            <a href="%s">
+                <img src="%s" />
+            </a>%s
+        </p>
+"""%(str(image.link),str(image.link_huge_thumbnail), ("\n            <div class=\"img-desc\">%s</div>" % (image.description,)) if image.description else "")
     
     def gen_album_page(self,aid,index):
         print("getting album", aid)
@@ -123,7 +121,8 @@ class pagegen:
         if album is None:
             return self.gen_empty_page()
         page=self.gen_page_header("r.om:"+(album.title if album.title else aid))
-        page+="<h1>%s</h1>\n"%(album.title) if album.title else ""
+        page+="        <h1>%s</h1>\n"%(album.title) if album.title else ""
+
         for i in album.images[index]:
             page+=self.gen_image(i)
         return page+self.gen_page_footer()
