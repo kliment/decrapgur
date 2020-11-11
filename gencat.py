@@ -95,8 +95,8 @@ class pagegen:
             return ""
         link=str(image.link)
         thumb=str(image.link_huge_thumbnail)
-        if ".mp4" in link or ".webm" or ".gif" in link:
-            if(".gif" in link):
+        if any([link.endswith(x) for x in [".gif", ".mp4", ".webm"]]):
+            if(link.endswith(".gif")):
                 link=link.replace("http://","https://").replace("h.gif",".mp4")
                 thumb=thumb.replace("http://","https://").replace(".gif",".jpg")
             #this is a video - deal with that somehow
