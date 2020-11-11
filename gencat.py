@@ -54,7 +54,11 @@ class pagegen:
                 index = [ int(x) if x != '' else None for x in index ]
                 
                 if len(index) == 1:
-                    index = slice(None, index[0], None)
+                    index = index[0]
+                    if index == -1:
+                        index = slice(-1, None)
+                    else:
+                        index = slice(index, index + 1)
                 else:
                     index = slice(*index)
             else:
