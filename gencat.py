@@ -42,12 +42,24 @@ class pagegen:
         self.craplist=['trump','biden','bleach','skeleton','hydroxy','current','vote','spoopy','skellingtons','pray','covid','shitpost','politic']
         
     def GET(self,url):
-        r=re.compile("/([a-zA-Z0-9]+)(/[a-zA-Z0-9+]*)?(/[a-zA-Z0-9+]*)?(.*)?")
+        r=re.compile("/([a-zA-Z0-9]+)(/[a-zA-Z0-9+]*)?(/[a-zA-Z0-9+]*)?(\[(?P<slice>-?[0-9]*(:-?[0-9]*){0,2})\])?(.*)?")
         m=r.search('/'+url)
         if m is not None:
             mg1=m.group(1) if m.group(1) is not None else ""
             mg2=m.group(2) if m.group(2) is not None else ""
             mg3=m.group(3) if m.group(3) is not None else ""
+            index=m['slice']
+            if index:
+                index = index.split(':')
+                index = [ int(x) if x != '' else None for x in index ]
+                
+                if len(index) == 1:
+                    index = slice(None, index[0], None)
+                else:
+                    index = slice(*index)
+            else:
+                index = slice(None)
+
             if 'gallery' in mg1:
                 return self.gen_gallery_page(mg2.strip('/'))
             elif 'mostv' in mg1:
@@ -57,7 +69,7 @@ class pagegen:
             elif 'tags' in mg1:
                 return str(gds['tags'])
             elif 'a' is mg1:
-                return self.gen_album_page(mg2.strip('/'))
+                return self.gen_album_page(mg2.strip('/'), index=index)
             elif 'r' is mg1 and len(mg2):
                 return self.gen_browse_page(mg3.strip('/'),gtype=mg2.strip('/'))
             elif mg2 is "":
@@ -105,14 +117,14 @@ class pagegen:
             </p>
             """%(str(image.link),str(image.link_huge_thumbnail),str(image.description if image.description else ""))
     
-    def gen_album_page(self,aid):
+    def gen_album_page(self,aid,index):
         print("getting album", aid)
         album=self.im.get_album(aid)
         if album is None:
             return self.gen_empty_page()
         page=self.gen_page_header("r.om:"+(album.title if album.title else aid))
         page+="<h1>%s</h1>\n"%(album.title) if album.title else ""
-        for i in album.images:
+        for i in album.images[index]:
             page+=self.gen_image(i)
         return page+self.gen_page_footer()
     
